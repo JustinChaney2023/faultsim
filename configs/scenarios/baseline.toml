@@ -1,0 +1,19 @@
+# Baseline scenario: clean network, no faults
+# Used to establish baseline metrics for each detection strategy.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 10
+jitter = 2
+drop_probability = 0.0
+
+[detector]
+strategy = "fixed_timeout"
+timeout = 200
