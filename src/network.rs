@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rand::Rng;
 
 use crate::clock::Tick;
@@ -28,31 +30,58 @@ impl Default for NetworkConfig {
 #[derive(Debug)]
 pub struct Network {
     pub config: NetworkConfig,
-    // TODO: Add partition rules (set of blocked (src, dst) pairs)
-    // TODO: Support asymmetric partitions
-    // TODO: Support configurable jitter distributions (normal, Pareto)
+    /// Set of blocked (src, dst) pairs representing active partitions.
+    /// Asymmetric: (A, B) blocks A→B but not necessarily B→A.
+    blocked_pairs: HashSet<(NodeId, NodeId)>,
 }
 
 impl Network {
     pub fn new(config: NetworkConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            blocked_pairs: HashSet::new(),
+        }
+    }
+
+    /// Apply a partition: nodes in different groups cannot communicate.
+    /// Each group is a Vec of NodeIds that can talk to each other.
+    pub fn apply_partition(&mut self, groups: &[Vec<NodeId>]) {
+        // Block all cross-group pairs (both directions for symmetric partitions).
+        for (i, group_a) in groups.iter().enumerate() {
+            for group_b in groups.iter().skip(i + 1) {
+                for &a in group_a {
+                    for &b in group_b {
+                        self.blocked_pairs.insert((a, b));
+                        self.blocked_pairs.insert((b, a));
+                    }
+                }
+            }
+        }
+    }
+
+    /// Remove all active partition rules.
+    pub fn clear_partitions(&mut self) {
+        self.blocked_pairs.clear();
     }
 
     /// Compute the delivery tick for a message sent at `send_tick`.
-    /// Returns `None` if the message is dropped.
+    /// Returns `None` if the message is dropped or blocked by a partition.
     pub fn delivery_tick<R: Rng>(
         &self,
-        _from: NodeId,
-        _to: NodeId,
+        from: NodeId,
+        to: NodeId,
         send_tick: Tick,
         rng: &mut R,
     ) -> Option<Tick> {
-        // Check for drop
-        if self.config.drop_probability > 0.0 && rng.gen::<f64>() < self.config.drop_probability {
+        // Check partition rules.
+        if self.blocked_pairs.contains(&(from, to)) {
             return None;
         }
 
-        // TODO: Check partition rules
+        // Check for drop.
+        if self.config.drop_probability > 0.0 && rng.gen::<f64>() < self.config.drop_probability {
+            return None;
+        }
 
         let jitter = if self.config.jitter > 0 {
             rng.gen_range(0..=self.config.jitter)
@@ -83,5 +112,28 @@ mod tests {
             let tick = net.delivery_tick(1, 2, 0, &mut rng).unwrap();
             assert!(tick >= 10 && tick <= 15, "tick {} out of bounds", tick);
         }
+    }
+
+    #[test]
+    fn partition_blocks_messages() {
+        let mut net = Network::new(NetworkConfig::default());
+        let mut rng = StdRng::seed_from_u64(0);
+
+        // Before partition, messages deliver.
+        assert!(net.delivery_tick(1, 2, 0, &mut rng).is_some());
+
+        // Apply partition: group [1,2] vs group [3,4].
+        net.apply_partition(&[vec![1, 2], vec![3, 4]]);
+
+        // Cross-group blocked.
+        assert!(net.delivery_tick(1, 3, 0, &mut rng).is_none());
+        assert!(net.delivery_tick(3, 1, 0, &mut rng).is_none());
+
+        // Same-group still works.
+        assert!(net.delivery_tick(1, 2, 0, &mut rng).is_some());
+
+        // Clear partitions.
+        net.clear_partitions();
+        assert!(net.delivery_tick(1, 3, 0, &mut rng).is_some());
     }
 }

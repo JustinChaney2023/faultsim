@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::collections::HashMap;
 
 use crate::clock::Tick;
@@ -14,6 +15,8 @@ pub struct FixedTimeoutDetector {
     last_heartbeat: HashMap<NodeId, Tick>,
     /// Set of nodes being monitored.
     monitored: Vec<NodeId>,
+    /// Current simulation tick, updated via on_tick.
+    current_tick: Tick,
 }
 
 impl FixedTimeoutDetector {
@@ -22,6 +25,7 @@ impl FixedTimeoutDetector {
             timeout,
             last_heartbeat: HashMap::new(),
             monitored,
+            current_tick: 0,
         }
     }
 }
@@ -31,15 +35,60 @@ impl FailureDetector for FixedTimeoutDetector {
         self.last_heartbeat.insert(from, tick);
     }
 
-    fn on_tick(&mut self, _tick: Tick) {
-        // Suspicion is computed on query — no per-tick work needed for fixed timeout.
+    fn on_tick(&mut self, tick: Tick) {
+        self.current_tick = tick;
     }
 
     fn suspected_nodes(&self) -> Vec<NodeId> {
-        // TODO: The engine must pass the current tick to make this work properly.
-        // For now, this is a placeholder that returns an empty list.
-        // Once the engine integration is done, compare (current_tick - last_heartbeat) > timeout.
-        let _ = (self.timeout, &self.last_heartbeat, &self.monitored);
-        Vec::new()
+        if self.current_tick == 0 {
+            return Vec::new();
+        }
+        self.monitored
+            .iter()
+            .filter(|&&node| match self.last_heartbeat.get(&node) {
+                Some(&last) => self.current_tick - last > self.timeout,
+                None => true,
+            })
+            .copied()
+            .collect()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_heartbeat_means_suspected() {
+        let mut det = FixedTimeoutDetector::new(100, vec![1, 2, 3]);
+        det.on_tick(200);
+        let suspected = det.suspected_nodes();
+        assert_eq!(suspected.len(), 3);
+    }
+
+    #[test]
+    fn recent_heartbeat_not_suspected() {
+        let mut det = FixedTimeoutDetector::new(100, vec![1, 2]);
+        det.on_heartbeat(1, 50);
+        det.on_heartbeat(2, 50);
+        det.on_tick(100);
+        assert!(det.suspected_nodes().is_empty());
+    }
+
+    #[test]
+    fn stale_heartbeat_is_suspected() {
+        let mut det = FixedTimeoutDetector::new(100, vec![1]);
+        det.on_heartbeat(1, 10);
+        det.on_tick(200);
+        let suspected = det.suspected_nodes();
+        assert_eq!(suspected, vec![1]);
     }
 }

@@ -1,0 +1,19 @@
+# High-jitter scenario: tests how jitter affects false-positive rates.
+# Jitter is 75% of base latency — near the limits of most detectors.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 50
+jitter = 38
+drop_probability = 0.0
+
+[detector]
+strategy = "fixed_timeout"
+timeout = 200

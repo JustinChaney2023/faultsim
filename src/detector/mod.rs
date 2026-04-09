@@ -2,6 +2,8 @@ pub mod adaptive;
 pub mod fixed_timeout;
 pub mod gossip;
 
+use std::any::Any;
+
 use crate::clock::Tick;
 use crate::node::NodeId;
 
@@ -19,4 +21,10 @@ pub trait FailureDetector {
 
     /// Returns the set of nodes currently suspected as failed.
     fn suspected_nodes(&self) -> Vec<NodeId>;
+
+    /// Downcast to concrete type for strategy-specific operations (e.g., gossip).
+    fn as_any(&self) -> &dyn Any;
+
+    /// Mutable downcast to concrete type.
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
