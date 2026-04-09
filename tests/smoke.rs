@@ -92,3 +92,64 @@ fn config_parses_baseline() {
     assert_eq!(config.simulation.seed, 42);
     assert_eq!(config.detector.strategy, DetectorStrategy::FixedTimeout);
 }
+
+#[test]
+fn baseline_simulation_no_false_positives() {
+    let config_path = std::path::Path::new("configs/scenarios/baseline.toml");
+    let config = scenario::load_config(config_path).expect("should parse baseline config");
+    let mut engine = scenario::build_engine(&config, None);
+    engine.run();
+
+    // Stable network with no crashes should produce messages but no detections.
+    assert!(engine.metrics.message_count > 0, "should deliver messages");
+    assert!(
+        engine.metrics.detections.is_empty(),
+        "stable network should have no detections, got {}",
+        engine.metrics.detections.len()
+    );
+    assert_eq!(engine.metrics.crashes.len(), 0);
+}
+
+#[test]
+fn crash_detected_as_true_positive() {
+    let config_path = std::path::Path::new("configs/scenarios/baseline.toml");
+    let config = scenario::load_config(config_path).expect("should parse baseline config");
+    let mut engine = scenario::build_engine(&config, None);
+
+    // Inject a crash at tick 500 for node 1.
+    engine.queue.schedule(Event {
+        tick: 500,
+        kind: EventKind::NodeCrash { node: 1 },
+    });
+
+    engine.run();
+
+    // At least one detection should be a true positive for node 1.
+    let tp_for_node1 = engine
+        .metrics
+        .detections
+        .iter()
+        .any(|d| d.node == 1 && d.true_positive);
+    assert!(
+        tp_for_node1,
+        "node 1 crash should be detected as true positive"
+    );
+}
+
+#[test]
+fn deterministic_replay() {
+    let config_path = std::path::Path::new("configs/scenarios/baseline.toml");
+    let config = scenario::load_config(config_path).expect("should parse baseline config");
+
+    let mut engine1 = scenario::build_engine(&config, Some(123));
+    engine1.run();
+
+    let mut engine2 = scenario::build_engine(&config, Some(123));
+    engine2.run();
+
+    assert_eq!(engine1.metrics.message_count, engine2.metrics.message_count);
+    assert_eq!(
+        engine1.metrics.detections.len(),
+        engine2.metrics.detections.len()
+    );
+}

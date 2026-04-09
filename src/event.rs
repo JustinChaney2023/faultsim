@@ -17,8 +17,18 @@ pub enum EventKind {
     NodeRecover { node: NodeId },
     /// A failure detector should run its per-tick logic.
     DetectorTick { node: NodeId },
-    // TODO: Add partition start/end events
-    // TODO: Add gossip round events
+    /// A node should initiate a gossip round — pick random peers, send suspicion list.
+    GossipRound { from: NodeId },
+    /// A gossip message arrives carrying a list of suspected nodes.
+    GossipArrival {
+        from: NodeId,
+        to: NodeId,
+        suspected: Vec<NodeId>,
+    },
+    /// A network partition begins. Nodes in different groups cannot communicate.
+    PartitionStart { groups: Vec<Vec<NodeId>> },
+    /// All active partitions are lifted.
+    PartitionEnd,
 }
 
 /// A scheduled simulation event.

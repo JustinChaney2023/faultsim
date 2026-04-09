@@ -1,3 +1,5 @@
+use crate::clock::Tick;
+
 /// Unique identifier for a node in the cluster.
 pub type NodeId = u64;
 
@@ -15,9 +17,12 @@ pub enum NodeState {
 pub struct Node {
     pub id: NodeId,
     pub state: NodeState,
-    // TODO: Add reference to this node's failure detector instance
-    // TODO: Add heartbeat interval configuration
-    // TODO: Track peers list for gossip protocol
+    /// Ticks between heartbeat sends.
+    pub heartbeat_interval: Tick,
+    /// Ticks between detector checks.
+    pub detector_interval: Tick,
+    /// IDs of all other nodes in the cluster.
+    pub peers: Vec<NodeId>,
 }
 
 impl Node {
@@ -25,6 +30,24 @@ impl Node {
         Self {
             id,
             state: NodeState::Alive,
+            heartbeat_interval: 100,
+            detector_interval: 100,
+            peers: Vec::new(),
+        }
+    }
+
+    pub fn with_config(
+        id: NodeId,
+        heartbeat_interval: Tick,
+        detector_interval: Tick,
+        peers: Vec<NodeId>,
+    ) -> Self {
+        Self {
+            id,
+            state: NodeState::Alive,
+            heartbeat_interval,
+            detector_interval,
+            peers,
         }
     }
 
