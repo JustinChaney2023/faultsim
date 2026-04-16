@@ -19,3 +19,9 @@ results/*
 
 # Environment
 .env
+
+# Agent files
+.claude/
+AGENTS.md
+CLAUDE.md
+NEXT.md

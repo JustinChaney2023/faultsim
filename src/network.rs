@@ -110,7 +110,7 @@ mod tests {
 
         for _ in 0..100 {
             let tick = net.delivery_tick(1, 2, 0, &mut rng).unwrap();
-            assert!(tick >= 10 && tick <= 15, "tick {} out of bounds", tick);
+            assert!((10..=15).contains(&tick), "tick {} out of bounds", tick);
         }
     }
 

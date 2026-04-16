@@ -56,6 +56,12 @@ pub struct DetectorConfig {
     pub gossip_interval: Option<u64>,
     /// Number of random peers to gossip with each round (used by Gossip strategy).
     pub gossip_fanout: Option<u32>,
+    /// φ suspicion threshold (used by PhiAccrual strategy). Common: 8, 12, 16.
+    pub phi_threshold: Option<f64>,
+    /// Sliding-window size for inter-arrival samples (used by PhiAccrual strategy).
+    pub phi_window_size: Option<usize>,
+    /// Minimum stddev floor in ticks (used by PhiAccrual strategy).
+    pub phi_min_stddev: Option<f64>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -64,6 +70,8 @@ pub enum DetectorStrategy {
     FixedTimeout,
     Adaptive,
     Gossip,
+    PhiAccrual,
+    AdaptiveAccrual,
 }
 
 /// A single fault injection event in the schedule.

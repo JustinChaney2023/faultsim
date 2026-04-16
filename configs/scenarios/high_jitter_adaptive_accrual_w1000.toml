@@ -1,0 +1,20 @@
+# High-jitter, Satzger 2007 with larger window (1000) to extend dynamic range.
+# log10(n) = 3.0 here, so threshold=2.0 is well below the empirical-CDF ceiling.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 50
+jitter = 38
+drop_probability = 0.0
+
+[detector]
+strategy = "adaptive_accrual"
+phi_threshold = 2.0
+phi_window_size = 1000

@@ -1,0 +1,33 @@
+# Crash scenario with the φ-accrual SOTA detector (Hayashibara et al., 2004).
+# Mirrors crash_recovery.toml / crash_adaptive.toml / crash_gossip.toml so the
+# four detectors can be compared on identical conditions.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 10
+jitter = 2
+drop_probability = 0.0
+
+[detector]
+strategy = "phi_accrual"
+# Threshold of 8 is the typical aggressive setting from the paper (also Cassandra's default).
+phi_threshold = 8.0
+phi_window_size = 100
+phi_min_stddev = 1.0
+
+[[faults]]
+tick = 2000
+kind = "crash"
+node = 3
+
+[[faults]]
+tick = 4000
+kind = "recover"
+node = 3
