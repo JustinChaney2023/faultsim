@@ -1,6 +1,8 @@
 pub mod adaptive;
+pub mod adaptive_accrual;
 pub mod fixed_timeout;
 pub mod gossip;
+pub mod phi_accrual;
 
 use std::any::Any;
 

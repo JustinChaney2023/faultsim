@@ -1,0 +1,35 @@
+# Crash scenario with the Satzger 2007 adaptive accrual detector.
+# Improves on φ-accrual by replacing the Normal distribution assumption with an
+# empirical CDF over the inter-arrival window. Mirrors crash_recovery.toml /
+# crash_adaptive.toml / crash_gossip.toml / crash_phi_accrual.toml exactly.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 10
+jitter = 2
+drop_probability = 0.0
+
+[detector]
+strategy = "adaptive_accrual"
+# Threshold scales differently than φ-accrual — empirical CDF is bounded
+# below by 1/(n+1), so a value of ~2 is the "no observed sample was this
+# delayed" line. Use higher (3-4) for more conservative detection.
+phi_threshold = 2.0
+phi_window_size = 100
+
+[[faults]]
+tick = 2000
+kind = "crash"
+node = 3
+
+[[faults]]
+tick = 4000
+kind = "recover"
+node = 3

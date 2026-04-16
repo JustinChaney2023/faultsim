@@ -1,0 +1,20 @@
+# High-jitter scenario with φ-accrual detector.
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 50
+jitter = 38
+drop_probability = 0.0
+
+[detector]
+strategy = "phi_accrual"
+phi_threshold = 8.0
+phi_window_size = 100
+phi_min_stddev = 1.0

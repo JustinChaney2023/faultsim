@@ -6,8 +6,10 @@ use rand::{Rng, SeedableRng};
 
 use crate::config::{DetectorStrategy, FaultKind, ScenarioConfig};
 use crate::detector::adaptive::AdaptiveDetector;
+use crate::detector::adaptive_accrual::AdaptiveAccrualDetector;
 use crate::detector::fixed_timeout::FixedTimeoutDetector;
 use crate::detector::gossip::GossipDetector;
+use crate::detector::phi_accrual::PhiAccrualDetector;
 use crate::detector::FailureDetector;
 use crate::engine::Engine;
 use crate::event::{Event, EventKind};
@@ -74,6 +76,23 @@ pub fn build_engine(config: &ScenarioConfig, seed_override: Option<u64>) -> Engi
                     gossip_interval,
                     gossip_fanout,
                 ))
+            }
+            DetectorStrategy::PhiAccrual => {
+                let threshold = config.detector.phi_threshold.unwrap_or(8.0);
+                let window = config.detector.phi_window_size.unwrap_or(100);
+                let min_stddev = config.detector.phi_min_stddev.unwrap_or(1.0);
+                Box::new(PhiAccrualDetector::new(
+                    threshold, window, min_stddev, monitored,
+                ))
+            }
+            DetectorStrategy::AdaptiveAccrual => {
+                // Reuses phi_threshold and phi_window_size (same semantics) but
+                // recommended thresholds are smaller — empirical CDF is bounded
+                // below by 1/(n+1), so a threshold of 2 is roughly equivalent
+                // to "no historical sample was this delayed".
+                let threshold = config.detector.phi_threshold.unwrap_or(2.0);
+                let window = config.detector.phi_window_size.unwrap_or(100);
+                Box::new(AdaptiveAccrualDetector::new(threshold, window, monitored))
             }
         };
         detectors.insert(id, detector);

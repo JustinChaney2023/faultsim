@@ -64,7 +64,7 @@ fn network_delivers_within_bounds() {
 
     for _ in 0..50 {
         let tick = net.delivery_tick(1, 2, 100, &mut rng).unwrap();
-        assert!(tick >= 110 && tick <= 115);
+        assert!((110..=115).contains(&tick));
     }
 }
 
