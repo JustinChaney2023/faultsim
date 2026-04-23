@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
 
 /// Top-level scenario configuration, deserialized from TOML.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ScenarioConfig {
     pub simulation: SimulationConfig,
     pub cluster: ClusterConfig,
@@ -14,7 +16,7 @@ pub struct ScenarioConfig {
     pub output: Option<OutputConfig>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SimulationConfig {
     /// Maximum simulation ticks.
     pub max_ticks: u64,
@@ -22,7 +24,7 @@ pub struct SimulationConfig {
     pub seed: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ClusterConfig {
     /// Number of nodes in the cluster.
     pub node_count: u32,
@@ -30,7 +32,7 @@ pub struct ClusterConfig {
     pub heartbeat_interval: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct NetworkConfigToml {
     /// Base one-way latency in ticks.
     pub base_latency: u64,
@@ -40,7 +42,7 @@ pub struct NetworkConfigToml {
     pub drop_probability: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct DetectorConfig {
     /// Which detection strategy to use.
     pub strategy: DetectorStrategy,
@@ -62,9 +64,16 @@ pub struct DetectorConfig {
     pub phi_window_size: Option<usize>,
     /// Minimum stddev floor in ticks (used by PhiAccrual strategy).
     pub phi_min_stddev: Option<f64>,
+    /// Freeform parameters passed to the custom strategy.
+    /// Define any f64 values you need:
+    ///   [detector.params]
+    ///   my_threshold = 5.0
+    ///   my_window    = 100.0
+    #[serde(default)]
+    pub params: HashMap<String, f64>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DetectorStrategy {
     FixedTimeout,
@@ -72,10 +81,13 @@ pub enum DetectorStrategy {
     Gossip,
     PhiAccrual,
     AdaptiveAccrual,
+    /// User-defined strategy. Edit `src/detector/custom.rs` and set
+    /// `strategy = "custom"` in your scenario TOML.
+    Custom,
 }
 
 /// A single fault injection event in the schedule.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FaultConfig {
     /// Tick at which the fault occurs.
     pub tick: u64,
@@ -89,7 +101,7 @@ pub struct FaultConfig {
 }
 
 /// Types of faults that can be injected.
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum FaultKind {
     Crash,
@@ -99,10 +111,13 @@ pub enum FaultKind {
 }
 
 /// Output/export configuration.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct OutputConfig {
     /// Directory to write results to. Defaults to "results/".
     pub dir: Option<String>,
     /// Export format: "csv" or "json".
     pub format: Option<String>,
+    /// When true, record per-tick φ values from accrual detectors and export
+    /// as `<name>_phi_log.csv` and `<name>_events.csv`.
+    pub phi_log: Option<bool>,
 }

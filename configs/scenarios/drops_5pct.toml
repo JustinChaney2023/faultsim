@@ -16,3 +16,7 @@ drop_probability = 0.05
 [detector]
 strategy = "fixed_timeout"
 timeout = 200
+
+[output]
+dir = "results/drops_5pct"
+format = "csv"

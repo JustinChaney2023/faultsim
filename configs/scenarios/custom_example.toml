@@ -1,0 +1,51 @@
+# Custom detector example — crash + recovery scenario.
+#
+# Uses the algorithm in src/detector/custom.rs (Windowed-Max by default).
+# Edit that file to implement your own detector, then run:
+#
+#   cargo run -- run --config configs/scenarios/custom_example.toml
+#
+# To sweep one of your own parameters:
+#   cargo run -- sweep --config configs/scenarios/custom_example.toml \
+#       --param safety_factor --start 1.0 --end 4.0 --steps 7 \
+#       --output results/sweep
+#
+# To compare against the built-in detectors:
+#   cargo run -- run-all --scenarios configs/scenarios --output results/all
+
+[simulation]
+max_ticks = 10000
+seed = 42
+
+[cluster]
+node_count = 10
+heartbeat_interval = 100
+
+[network]
+base_latency = 10
+jitter = 2
+drop_probability = 0.0
+
+[detector]
+strategy = "custom"
+
+# Your algorithm's parameters — add as many as you need.
+# Access them in CustomDetector::new() via params.get("key").
+[detector.params]
+safety_factor = 2.0   # timeout = safety_factor × max observed inter-arrival
+window        = 10.0  # sliding window size (number of inter-arrival samples)
+
+# Node 3 crashes at tick 2000 and recovers at tick 4000.
+[[faults]]
+tick = 2000
+kind = "crash"
+node = 3
+
+[[faults]]
+tick = 4000
+kind = "recover"
+node = 3
+
+[output]
+dir = "results/custom"
+format = "csv"

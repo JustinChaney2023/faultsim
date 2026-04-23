@@ -111,6 +111,10 @@ impl FailureDetector for AdaptiveAccrualDetector {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn phi_for_node(&self, node: NodeId) -> Option<f64> {
+        self.phi(node)
+    }
 }
 
 #[cfg(test)]

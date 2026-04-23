@@ -1,3 +1,4 @@
+pub mod aggregate;
 pub mod clock;
 pub mod config;
 pub mod detector;

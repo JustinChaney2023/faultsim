@@ -1,5 +1,6 @@
 pub mod adaptive;
 pub mod adaptive_accrual;
+pub mod custom;
 pub mod fixed_timeout;
 pub mod gossip;
 pub mod phi_accrual;
@@ -29,4 +30,11 @@ pub trait FailureDetector {
 
     /// Mutable downcast to concrete type.
     fn as_any_mut(&mut self) -> &mut dyn Any;
+
+    /// Returns the current accrual suspicion value φ for `node`, or `None`
+    /// for detectors that do not maintain a continuous suspicion level.
+    /// Used by the engine for optional per-tick φ timeline logging.
+    fn phi_for_node(&self, _node: NodeId) -> Option<f64> {
+        None
+    }
 }

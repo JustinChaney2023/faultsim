@@ -20,3 +20,7 @@ timeout = 200
 suspicion_threshold = 3
 gossip_interval = 50
 gossip_fanout = 3
+
+[output]
+dir = "results/gossip"
+format = "csv"
