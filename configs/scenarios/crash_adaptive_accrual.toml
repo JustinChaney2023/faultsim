@@ -33,3 +33,8 @@ node = 3
 tick = 4000
 kind = "recover"
 node = 3
+
+[output]
+dir = "results/crash_adaptive_accrual"
+format = "csv"
+phi_log = true

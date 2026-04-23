@@ -7,7 +7,7 @@ use crate::clock::{Clock, Tick};
 use crate::detector::gossip::GossipDetector;
 use crate::detector::FailureDetector;
 use crate::event::{Event, EventKind, EventQueue};
-use crate::metrics::{DetectionEvent, MetricsCollector};
+use crate::metrics::{DetectionEvent, MetricsCollector, PhiLogEntry};
 use crate::network::Network;
 use crate::node::{Node, NodeId};
 
@@ -24,6 +24,8 @@ pub struct Engine {
     rng: Option<StdRng>,
     /// Tracks (detector_node, suspected_node) pairs to avoid duplicate detection events.
     active_suspicions: HashSet<(NodeId, NodeId)>,
+    /// When true, record a φ sample from every accrual detector on each DetectorTick.
+    pub phi_log_enabled: bool,
 }
 
 impl Engine {
@@ -39,6 +41,7 @@ impl Engine {
             detectors: HashMap::new(),
             rng: None,
             active_suspicions: HashSet::new(),
+            phi_log_enabled: false,
         }
     }
 
@@ -60,6 +63,7 @@ impl Engine {
             detectors,
             rng: Some(rng),
             active_suspicions: HashSet::new(),
+            phi_log_enabled: false,
         }
     }
 
@@ -267,8 +271,31 @@ impl Engine {
 
         let tick = self.clock.now();
 
+        // Collect node IDs before the mutable borrow of detectors.
+        let observed_nodes: Vec<NodeId> = self
+            .nodes
+            .keys()
+            .copied()
+            .filter(|&n| n != node)
+            .collect();
+
         if let Some(detector) = self.detectors.get_mut(&node) {
             detector.on_tick(tick);
+
+            // Optional φ timeline logging for accrual detectors.
+            if self.phi_log_enabled {
+                for &observed in &observed_nodes {
+                    if let Some(phi) = detector.phi_for_node(observed) {
+                        self.metrics.record_phi(PhiLogEntry {
+                            tick,
+                            observer: node,
+                            observed,
+                            phi,
+                        });
+                    }
+                }
+            }
+
             let suspected = detector.suspected_nodes();
 
             for suspected_id in suspected {

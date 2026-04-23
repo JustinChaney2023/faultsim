@@ -7,6 +7,7 @@ use rand::{Rng, SeedableRng};
 use crate::config::{DetectorStrategy, FaultKind, ScenarioConfig};
 use crate::detector::adaptive::AdaptiveDetector;
 use crate::detector::adaptive_accrual::AdaptiveAccrualDetector;
+use crate::detector::custom::CustomDetector;
 use crate::detector::fixed_timeout::FixedTimeoutDetector;
 use crate::detector::gossip::GossipDetector;
 use crate::detector::phi_accrual::PhiAccrualDetector;
@@ -94,6 +95,9 @@ pub fn build_engine(config: &ScenarioConfig, seed_override: Option<u64>) -> Engi
                 let window = config.detector.phi_window_size.unwrap_or(100);
                 Box::new(AdaptiveAccrualDetector::new(threshold, window, monitored))
             }
+            DetectorStrategy::Custom => {
+                Box::new(CustomDetector::new(&config.detector.params, monitored))
+            }
         };
         detectors.insert(id, detector);
     }
@@ -161,11 +165,24 @@ pub fn build_engine(config: &ScenarioConfig, seed_override: Option<u64>) -> Engi
         });
     }
 
+    // Enable φ timeline logging if requested in the output config.
+    if config
+        .output
+        .as_ref()
+        .and_then(|o| o.phi_log)
+        .unwrap_or(false)
+    {
+        engine.phi_log_enabled = true;
+    }
+
     engine
 }
 
 /// Prints a human-readable summary of simulation results.
 pub fn print_summary(metrics: &MetricsCollector, max_ticks: u64) {
+    let fmt_lat = |v: Option<f64>| {
+        v.map_or("N/A".to_string(), |l| format!("{:.2} ticks", l))
+    };
     println!("=== Simulation Summary ===");
     println!("Total ticks:            {}", max_ticks);
     println!("Messages delivered:     {}", metrics.message_count);
@@ -180,9 +197,21 @@ pub fn print_summary(metrics: &MetricsCollector, max_ticks: u64) {
         "False positive rate:    {:.4}",
         metrics.false_positive_rate()
     );
-    if let Some(latency) = metrics.mean_detection_latency() {
-        println!("Mean detection latency: {:.2} ticks", latency);
-    } else {
-        println!("Mean detection latency: N/A (no true positives)");
-    }
+    println!("False negatives:        {}", metrics.false_negative_count());
+    println!(
+        "Mean detection latency: {}",
+        fmt_lat(metrics.mean_detection_latency())
+    );
+    println!(
+        "p50 detection latency:  {}",
+        fmt_lat(metrics.detection_latency_percentile(50.0))
+    );
+    println!(
+        "p95 detection latency:  {}",
+        fmt_lat(metrics.detection_latency_percentile(95.0))
+    );
+    println!(
+        "p99 detection latency:  {}",
+        fmt_lat(metrics.detection_latency_percentile(99.0))
+    );
 }

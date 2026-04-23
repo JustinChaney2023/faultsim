@@ -17,3 +17,8 @@ drop_probability = 0.0
 strategy = "adaptive_accrual"
 phi_threshold = 2.0
 phi_window_size = 100
+
+[output]
+dir = "results/high_jitter_adaptive_accrual"
+format = "csv"
+phi_log = true

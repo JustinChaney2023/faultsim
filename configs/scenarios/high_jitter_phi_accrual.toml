@@ -18,3 +18,8 @@ strategy = "phi_accrual"
 phi_threshold = 8.0
 phi_window_size = 100
 phi_min_stddev = 1.0
+
+[output]
+dir = "results/high_jitter_phi_accrual"
+format = "csv"
+phi_log = true

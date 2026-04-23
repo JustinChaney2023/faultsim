@@ -17,3 +17,7 @@ drop_probability = 0.0
 strategy = "adaptive"
 alpha = 0.5
 safety_multiplier = 2.0
+
+[output]
+dir = "results/high_jitter_adaptive"
+format = "csv"

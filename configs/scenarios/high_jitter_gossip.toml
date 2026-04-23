@@ -19,3 +19,7 @@ suspicion_threshold = 3
 timeout = 200
 gossip_interval = 50
 gossip_fanout = 3
+
+[output]
+dir = "results/high_jitter_gossip"
+format = "csv"

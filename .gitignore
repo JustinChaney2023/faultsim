@@ -20,6 +20,9 @@ results/*
 # Environment
 .env
 
+# Documentation (kept local)
+docs/
+
 # Agent files
 .claude/
 AGENTS.md

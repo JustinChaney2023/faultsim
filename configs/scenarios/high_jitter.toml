@@ -17,3 +17,7 @@ drop_probability = 0.0
 [detector]
 strategy = "fixed_timeout"
 timeout = 200
+
+[output]
+dir = "results/high_jitter"
+format = "csv"
