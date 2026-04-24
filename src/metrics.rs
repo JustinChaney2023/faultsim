@@ -43,6 +43,9 @@ impl MetricsCollector {
         Self::default()
     }
 
+    /// Increment the delivered-message counter.
+    /// The `_tick` parameter is reserved for future per-interval message-rate
+    /// tracking and is intentionally unused for now.
     pub fn record_message(&mut self, _tick: Tick) {
         self.message_count += 1;
     }

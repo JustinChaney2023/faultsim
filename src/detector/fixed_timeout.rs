@@ -40,6 +40,7 @@ impl FailureDetector for FixedTimeoutDetector {
     }
 
     fn suspected_nodes(&self) -> Vec<NodeId> {
+        // current_tick == 0 means the simulation just started; don't suspect yet.
         if self.current_tick == 0 {
             return Vec::new();
         }
@@ -47,6 +48,7 @@ impl FailureDetector for FixedTimeoutDetector {
             .iter()
             .filter(|&&node| match self.last_heartbeat.get(&node) {
                 Some(&last) => self.current_tick - last > self.timeout,
+                // No heartbeat ever received from this node — treat as timed out.
                 None => true,
             })
             .copied()
