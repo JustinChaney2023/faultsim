@@ -45,6 +45,8 @@ impl FailureDetector for AdaptiveDetector {
     fn on_heartbeat(&mut self, from: NodeId, tick: Tick) {
         if let Some(&prev) = self.last_heartbeat.get(&from) {
             let delta = (tick - prev) as f64;
+            // Seed the EWMA with the first real inter-arrival on first update;
+            // after that, apply the standard EWMA update.
             let current = self.ewma.get(&from).copied().unwrap_or(delta);
             let updated = self.alpha * delta + (1.0 - self.alpha) * current;
             self.ewma.insert(from, updated);

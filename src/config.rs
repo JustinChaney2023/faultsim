@@ -58,11 +58,15 @@ pub struct DetectorConfig {
     pub gossip_interval: Option<u64>,
     /// Number of random peers to gossip with each round (used by Gossip strategy).
     pub gossip_fanout: Option<u32>,
-    /// φ suspicion threshold (used by PhiAccrual strategy). Common: 8, 12, 16.
+    /// φ suspicion threshold (PhiAccrual and AdaptiveAccrual).
+    /// PhiAccrual: 8 aggressive / 12 moderate / 16 conservative.
+    /// AdaptiveAccrual: use 2–4 (empirical CDF ceiling is log₁₀(window_size)).
     pub phi_threshold: Option<f64>,
-    /// Sliding-window size for inter-arrival samples (used by PhiAccrual strategy).
+    /// Sliding-window size for inter-arrival samples (PhiAccrual and AdaptiveAccrual).
+    /// For AdaptiveAccrual this also controls the φ ceiling: max φ = log₁₀(n+1).
     pub phi_window_size: Option<usize>,
-    /// Minimum stddev floor in ticks (used by PhiAccrual strategy).
+    /// Minimum stddev floor in ticks (PhiAccrual only).
+    /// Prevents φ from blowing up on perfectly regular networks.
     pub phi_min_stddev: Option<f64>,
     /// Freeform parameters passed to the custom strategy.
     /// Define any f64 values you need:

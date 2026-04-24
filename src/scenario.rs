@@ -38,7 +38,10 @@ pub fn build_engine(config: &ScenarioConfig, seed_override: Option<u64>) -> Engi
 
     let node_ids: Vec<u64> = (1..=config.cluster.node_count as u64).collect();
     let heartbeat_interval = config.cluster.heartbeat_interval;
-    let detector_interval = heartbeat_interval; // Check once per heartbeat period.
+    // Detectors poll at the same rate as heartbeats. This means detection
+    // latency is bounded below by one heartbeat interval, which is the
+    // standard model in the literature.
+    let detector_interval = heartbeat_interval;
 
     // Create nodes, each with a peers list of all other nodes.
     let mut nodes = HashMap::new();

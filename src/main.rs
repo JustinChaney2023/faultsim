@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use faultsim::aggregate::{
     export_runs_csv, export_sweep_csv, AggregatedMetrics, RunSnapshot,
@@ -103,7 +103,8 @@ fn main() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn load_config_or_exit(path: &PathBuf) -> ScenarioConfig {
+/// Load a scenario config or print an error and exit with code 1.
+fn load_config_or_exit(path: &Path) -> ScenarioConfig {
     match faultsim::scenario::load_config(path) {
         Ok(c) => c,
         Err(e) => {
@@ -113,7 +114,8 @@ fn load_config_or_exit(path: &PathBuf) -> ScenarioConfig {
     }
 }
 
-fn make_output_dir(dir: &PathBuf) {
+/// Create an output directory (including parents), exiting on failure.
+fn make_output_dir(dir: &Path) {
     if let Err(e) = std::fs::create_dir_all(dir) {
         eprintln!("Error creating output directory {}: {}", dir.display(), e);
         std::process::exit(1);
@@ -151,9 +153,12 @@ fn apply_param(config: &mut ScenarioConfig, param: &str, value: f64) -> Result<(
     Ok(())
 }
 
+/// Write all result files for a single run to `dir`.
+/// Format is `"csv"` or `"json"` (anything else falls back to CSV).
+/// The φ log is always written as CSV regardless of `format`.
 fn export_results(
     metrics: &faultsim::metrics::MetricsCollector,
-    dir: &PathBuf,
+    dir: &Path,
     scenario_name: &str,
     max_ticks: u64,
     format: &str,

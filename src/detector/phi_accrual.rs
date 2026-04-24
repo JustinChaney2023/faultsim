@@ -117,6 +117,9 @@ impl FailureDetector for PhiAccrualDetector {
     }
 }
 
+/// Computes the population mean and stddev of a sample iterator.
+/// We use population variance (÷N, not ÷(N−1)) to fit the Normal model,
+/// consistent with the original Hayashibara et al. 2004 paper.
 fn mean_stddev<I: Iterator<Item = u64> + Clone>(samples: I) -> (f64, f64) {
     let values: Vec<f64> = samples.map(|v| v as f64).collect();
     let n = values.len() as f64;

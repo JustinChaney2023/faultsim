@@ -26,6 +26,8 @@ pub struct Node {
 }
 
 impl Node {
+    /// Convenience constructor with default intervals and no peers.
+    /// Primarily used in unit tests; production code uses [`Node::with_config`].
     pub fn new(id: NodeId) -> Self {
         Self {
             id,

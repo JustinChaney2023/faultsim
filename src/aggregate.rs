@@ -134,10 +134,7 @@ impl AggregatedMetrics {
     /// Print a human-readable table to stdout.
     pub fn print(&self) {
         println!("=== Aggregated Results ({} runs) ===", self.total_runs);
-        println!(
-            "{:<28}  {}",
-            "Metric", "mean ± stddev  [min, max]"
-        );
+        println!("{:<28}  mean ± stddev  [min, max]", "Metric");
         println!("{}", "-".repeat(70));
         println!(
             "{:<28}  {}",

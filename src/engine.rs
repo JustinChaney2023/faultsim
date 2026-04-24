@@ -170,6 +170,22 @@ impl Engine {
             tick: tick + 1,
             kind: EventKind::DetectorTick { node },
         });
+
+        // Resume gossip rounds if this node uses the gossip strategy.
+        // When a node crashes, its gossip round handler exits early and does not
+        // reschedule the next round, so we must re-prime it on recovery.
+        let gossip_interval = self
+            .detectors
+            .get(&node)
+            .and_then(|det| det.as_any().downcast_ref::<GossipDetector>())
+            .map(|g| g.gossip_interval);
+
+        if let Some(interval) = gossip_interval {
+            self.queue.schedule(Event {
+                tick: tick + interval,
+                kind: EventKind::GossipRound { from: node },
+            });
+        }
     }
 
     fn handle_gossip_round(&mut self, from: NodeId) {
@@ -296,9 +312,12 @@ impl Engine {
                 }
             }
 
+            // Collect the current suspected set once and reuse it for both
+            // recording new detections and cleaning up stale suspicions.
             let suspected = detector.suspected_nodes();
+            let current_suspected: HashSet<NodeId> = suspected.iter().copied().collect();
 
-            for suspected_id in suspected {
+            for &suspected_id in &suspected {
                 let pair = (node, suspected_id);
 
                 // Only record new suspicions, not re-suspicions.
@@ -310,7 +329,7 @@ impl Engine {
                 let actually_crashed = self.nodes.get(&suspected_id).is_some_and(|n| !n.is_alive());
 
                 let latency = if actually_crashed {
-                    // Find the crash tick for this node.
+                    // Find the most recent crash tick for this node.
                     self.metrics
                         .crashes
                         .iter()
@@ -330,8 +349,6 @@ impl Engine {
             }
 
             // Clear suspicions for nodes no longer in the suspected list.
-            let current_suspected: HashSet<NodeId> =
-                detector.suspected_nodes().into_iter().collect();
             self.active_suspicions
                 .retain(|&(detector_node, suspected_id)| {
                     detector_node != node || current_suspected.contains(&suspected_id)
