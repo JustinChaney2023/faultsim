@@ -13,8 +13,10 @@
 | Strategy | Description |
 |---|---|
 | **Fixed-timeout heartbeat** | Declares failure after a static timeout with no heartbeat received |
-| **Adaptive-timeout heartbeat** | Adjusts the timeout dynamically based on observed round-trip behavior |
-| **Gossip-assisted suspicion** | Combines local heartbeat monitoring with disseminated suspicion via gossip |
+| **Adaptive-timeout heartbeat** | EWMA of observed inter-arrival times drives the timeout |
+| **Gossip-assisted suspicion** | Combines local heartbeat monitoring with suspicion disseminated via gossip |
+| **Phi accrual** | Suspicion level derived from a distribution over recent inter-arrival samples (Hayashibara et al.) |
+| **Adaptive accrual** | Accrual-style detector with parameters tuned online |
 
 ## Key Metrics
 
@@ -38,17 +40,44 @@ tests/          Integration and smoke tests
 
 ```bash
 # Build the simulator
-cargo build
+cargo build                  # debug
+cargo build --release        # optimized, used by the batch runner
 
 # Run with a scenario config
-cargo run -- --config configs/scenarios/baseline.toml
+cargo run --release -- --config configs/scenarios/baseline.toml
 
-# Run tests
+# Run with a fixed seed and output directory
+cargo run --release -- --config configs/scenarios/baseline.toml --seed 42 --output results/demo
+
+# Run tests (27 unit + 9 integration)
 cargo test
 
-# Check formatting
+# CI gates
 cargo fmt -- --check
+cargo clippy -- -D warnings
+
+# Batch a set of scenarios; results land in results/<scenario>_<timestamp>/
+./scripts/run_experiment.sh configs/scenarios/*.toml
+
+# Plot aggregated summaries
+python scripts/plot_results.py results/**/summary.csv -o results/plots
 ```
+
+See [docs/demo.md](docs/demo.md) for a guided set of demo commands covering every detector and network-pathology scenario.
+
+## Scenarios
+
+[configs/scenarios/](configs/scenarios/) holds the full scenario set. Each TOML specifies cluster size, network parameters, detector strategy, and a fault schedule (`crash`, `recover`, `partition_start`, `partition_end`). Groups currently covered:
+
+- **baseline / adaptive / gossip** — clean-network baselines per detector
+- **crash_\*** — single-node crash under each detector strategy
+- **high_jitter_\*** — elevated jitter stress tests
+- **drops_5pct / drops_15pct** — lossy-link scenarios
+- **partition** — network partition and heal
+
+## Reproducibility
+
+Every run is deterministic given a `(config, seed)` pair. A single `StdRng` is threaded through [src/scenario.rs](src/scenario.rs) into the engine and network model; no uncontrolled randomness (`thread_rng`, unordered `HashMap` iteration on observable paths) is introduced. The `deterministic_replay` integration test enforces this.
 
 ## Development
 
@@ -58,8 +87,6 @@ This project uses a `main`/`dev` branch model with feature branches:
 - `dev` — integration branch for in-progress work
 - `feature/*` — individual feature branches merged into `dev`
 
+Every notable change is accompanied by a dated entry in [docs/logs/](docs/logs/) capturing the *why*, not just the *what*.
+
 See [docs/design.md](docs/design.md) for architecture details and [docs/experiment-plan.md](docs/experiment-plan.md) for the experimental methodology.
-
-## License
-
-[MIT](LICENSE)
