@@ -32,9 +32,15 @@ impl RunSnapshot {
             false_positive_rate: metrics.false_positive_rate(),
             false_negative_count: metrics.false_negative_count() as f64,
             mean_detection_latency: metrics.mean_detection_latency().unwrap_or(f64::NAN),
-            p50_latency: metrics.detection_latency_percentile(50.0).unwrap_or(f64::NAN),
-            p95_latency: metrics.detection_latency_percentile(95.0).unwrap_or(f64::NAN),
-            p99_latency: metrics.detection_latency_percentile(99.0).unwrap_or(f64::NAN),
+            p50_latency: metrics
+                .detection_latency_percentile(50.0)
+                .unwrap_or(f64::NAN),
+            p95_latency: metrics
+                .detection_latency_percentile(95.0)
+                .unwrap_or(f64::NAN),
+            p99_latency: metrics
+                .detection_latency_percentile(99.0)
+                .unwrap_or(f64::NAN),
             message_count: metrics.message_count as f64,
         }
     }
@@ -138,31 +144,38 @@ impl AggregatedMetrics {
         println!("{}", "-".repeat(70));
         println!(
             "{:<28}  {}",
-            "False positive rate", self.false_positive_rate.display()
+            "False positive rate",
+            self.false_positive_rate.display()
         );
         println!(
             "{:<28}  {}",
-            "False negatives", self.false_negative_count.display()
+            "False negatives",
+            self.false_negative_count.display()
         );
         println!(
             "{:<28}  {}",
-            "Mean detection latency", self.mean_detection_latency.display()
+            "Mean detection latency",
+            self.mean_detection_latency.display()
         );
         println!(
             "{:<28}  {}",
-            "p50 detection latency", self.p50_latency.display()
+            "p50 detection latency",
+            self.p50_latency.display()
         );
         println!(
             "{:<28}  {}",
-            "p95 detection latency", self.p95_latency.display()
+            "p95 detection latency",
+            self.p95_latency.display()
         );
         println!(
             "{:<28}  {}",
-            "p99 detection latency", self.p99_latency.display()
+            "p99 detection latency",
+            self.p99_latency.display()
         );
         println!(
             "{:<28}  {}",
-            "Messages delivered", self.message_count.display()
+            "Messages delivered",
+            self.message_count.display()
         );
     }
 
@@ -180,8 +193,16 @@ impl AggregatedMetrics {
                 )
             }
         };
-        writeln!(f, "{}", row("false_positive_rate", &self.false_positive_rate))?;
-        writeln!(f, "{}", row("false_negative_count", &self.false_negative_count))?;
+        writeln!(
+            f,
+            "{}",
+            row("false_positive_rate", &self.false_positive_rate)
+        )?;
+        writeln!(
+            f,
+            "{}",
+            row("false_negative_count", &self.false_negative_count)
+        )?;
         writeln!(
             f,
             "{}",

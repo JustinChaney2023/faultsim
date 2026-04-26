@@ -288,12 +288,8 @@ impl Engine {
         let tick = self.clock.now();
 
         // Collect node IDs before the mutable borrow of detectors.
-        let observed_nodes: Vec<NodeId> = self
-            .nodes
-            .keys()
-            .copied()
-            .filter(|&n| n != node)
-            .collect();
+        let observed_nodes: Vec<NodeId> =
+            self.nodes.keys().copied().filter(|&n| n != node).collect();
 
         if let Some(detector) = self.detectors.get_mut(&node) {
             detector.on_tick(tick);

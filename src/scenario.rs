@@ -183,9 +183,7 @@ pub fn build_engine(config: &ScenarioConfig, seed_override: Option<u64>) -> Engi
 
 /// Prints a human-readable summary of simulation results.
 pub fn print_summary(metrics: &MetricsCollector, max_ticks: u64) {
-    let fmt_lat = |v: Option<f64>| {
-        v.map_or("N/A".to_string(), |l| format!("{:.2} ticks", l))
-    };
+    let fmt_lat = |v: Option<f64>| v.map_or("N/A".to_string(), |l| format!("{:.2} ticks", l));
     println!("=== Simulation Summary ===");
     println!("Total ticks:            {}", max_ticks);
     println!("Messages delivered:     {}", metrics.message_count);

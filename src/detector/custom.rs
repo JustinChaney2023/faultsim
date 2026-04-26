@@ -48,14 +48,12 @@ use crate::node::NodeId;
 
 pub struct CustomDetector {
     // ── Your parameters (read from [detector.params] in the TOML) ────────────
-
     /// Timeout = safety_factor × max inter-arrival in the window.
     safety_factor: f64,
     /// Number of inter-arrival samples to keep per monitored node.
     window_size: usize,
 
     // ── Internal state (feel free to add or remove fields) ───────────────────
-
     /// Nodes this detector is responsible for monitoring.
     monitored: Vec<NodeId>,
     /// Per-node sliding window of inter-arrival times.
@@ -141,8 +139,12 @@ impl FailureDetector for CustomDetector {
 
     // ── Leave these as-is ─────────────────────────────────────────────────────
 
-    fn as_any(&self) -> &dyn Any { self }
-    fn as_any_mut(&mut self) -> &mut dyn Any { self }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 
     // Optional: expose a continuous suspicion value for φ-timeline logging.
     // Return None (default) if your algorithm doesn't produce one.
