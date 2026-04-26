@@ -102,9 +102,10 @@ impl MetricsCollector {
         self.crashes
             .iter()
             .filter(|&&(crash_tick, node_id)| {
-                !self.detections.iter().any(|d| {
-                    d.node == node_id && d.true_positive && d.tick >= crash_tick
-                })
+                !self
+                    .detections
+                    .iter()
+                    .any(|d| d.node == node_id && d.true_positive && d.tick >= crash_tick)
             })
             .count()
     }
@@ -240,14 +241,38 @@ impl MetricsCollector {
         writeln!(f, "  \"scenario\": \"{}\",", scenario_name)?;
         writeln!(f, "  \"total_ticks\": {},", total_ticks)?;
         writeln!(f, "  \"messages\": {},", self.message_count)?;
-        writeln!(f, "  \"messages_per_tick\": {:.4},", self.messages_per_tick(total_ticks))?;
+        writeln!(
+            f,
+            "  \"messages_per_tick\": {:.4},",
+            self.messages_per_tick(total_ticks)
+        )?;
         writeln!(f, "  \"detections\": {},", self.detections.len())?;
-        writeln!(f, "  \"false_positive_rate\": {:.4},", self.false_positive_rate())?;
+        writeln!(
+            f,
+            "  \"false_positive_rate\": {:.4},",
+            self.false_positive_rate()
+        )?;
         writeln!(f, "  \"false_negatives\": {},", self.false_negative_count())?;
-        writeln!(f, "  \"mean_detection_latency\": {},", null_or(self.mean_detection_latency()))?;
-        writeln!(f, "  \"p50_latency\": {},", null_or(self.detection_latency_percentile(50.0)))?;
-        writeln!(f, "  \"p95_latency\": {},", null_or(self.detection_latency_percentile(95.0)))?;
-        writeln!(f, "  \"p99_latency\": {},", null_or(self.detection_latency_percentile(99.0)))?;
+        writeln!(
+            f,
+            "  \"mean_detection_latency\": {},",
+            null_or(self.mean_detection_latency())
+        )?;
+        writeln!(
+            f,
+            "  \"p50_latency\": {},",
+            null_or(self.detection_latency_percentile(50.0))
+        )?;
+        writeln!(
+            f,
+            "  \"p95_latency\": {},",
+            null_or(self.detection_latency_percentile(95.0))
+        )?;
+        writeln!(
+            f,
+            "  \"p99_latency\": {},",
+            null_or(self.detection_latency_percentile(99.0))
+        )?;
         writeln!(f, "  \"crashes\": {},", self.crashes.len())?;
         writeln!(f, "  \"recoveries\": {}", self.recoveries.len())?;
         writeln!(f, "}}")?;

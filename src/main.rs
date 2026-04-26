@@ -1,9 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::{Path, PathBuf};
 
-use faultsim::aggregate::{
-    export_runs_csv, export_sweep_csv, AggregatedMetrics, RunSnapshot,
-};
+use faultsim::aggregate::{export_runs_csv, export_sweep_csv, AggregatedMetrics, RunSnapshot};
 use faultsim::config::ScenarioConfig;
 
 /// faultsim — discrete-event simulator for failure-detection research
@@ -233,7 +231,13 @@ fn run_single(args: RunArgs) {
             .as_ref()
             .and_then(|o| o.format.as_deref())
             .unwrap_or("csv");
-        export_results(&engine.metrics, &dir, scenario_name, config.simulation.max_ticks, format);
+        export_results(
+            &engine.metrics,
+            &dir,
+            scenario_name,
+            config.simulation.max_ticks,
+            format,
+        );
     }
 }
 
@@ -288,7 +292,10 @@ fn run_all(args: RunAllArgs) {
             .output
             .join(format!("{}_detections.csv", scenario_name));
         if let Err(e) = engine.metrics.export_detections_csv(&detections_path) {
-            eprintln!("  [WARN] {}: failed to write detections CSV: {}", scenario_name, e);
+            eprintln!(
+                "  [WARN] {}: failed to write detections CSV: {}",
+                scenario_name, e
+            );
         }
 
         if let Err(e) = engine.metrics.export_summary_csv(
@@ -296,7 +303,10 @@ fn run_all(args: RunAllArgs) {
             config.simulation.max_ticks,
             scenario_name,
         ) {
-            eprintln!("  [WARN] {}: failed to write summary row: {}", scenario_name, e);
+            eprintln!(
+                "  [WARN] {}: failed to write summary row: {}",
+                scenario_name, e
+            );
         }
 
         println!(
@@ -336,9 +346,12 @@ fn sweep_seeds(args: SweepSeedsArgs) {
         let mut engine = faultsim::scenario::build_engine(&config, Some(seed));
         engine.run();
         snapshots.push(RunSnapshot::from_metrics(&engine.metrics, seed));
-        eprint!("  seed {:>4}  FP={:.4}  FN={}\r", seed,
+        eprint!(
+            "  seed {:>4}  FP={:.4}  FN={}\r",
+            seed,
             snapshots.last().unwrap().false_positive_rate,
-            snapshots.last().unwrap().false_negative_count);
+            snapshots.last().unwrap().false_negative_count
+        );
     }
     eprintln!(); // clear the \r line
 
@@ -417,8 +430,13 @@ fn sweep(args: SweepArgs) {
         engine.run();
 
         let snap = RunSnapshot::from_metrics(&engine.metrics, seed);
-        let fmt_lat =
-            |v: f64| if v.is_nan() { "N/A".to_string() } else { format!("{:.2}", v) };
+        let fmt_lat = |v: f64| {
+            if v.is_nan() {
+                "N/A".to_string()
+            } else {
+                format!("{:.2}", v)
+            }
+        };
 
         println!(
             "{:>14.4}  {:>10.4}  {:>6}  {:>12}  {:>10}  {:>10}  {:>10}",
