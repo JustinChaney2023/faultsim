@@ -160,6 +160,7 @@ impl MetricsCollector {
         path: &Path,
         total_ticks: u64,
         scenario_name: &str,
+        wall_time_ms: f64,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let write_header = !path.exists();
         let mut f = std::fs::OpenOptions::new()
@@ -169,13 +170,13 @@ impl MetricsCollector {
         if write_header {
             writeln!(
                 f,
-                "scenario,total_ticks,messages,messages_per_tick,detections,false_positive_rate,false_negatives,mean_detection_latency,p50_latency,p95_latency,p99_latency,crashes,recoveries"
+                "scenario,total_ticks,messages,messages_per_tick,detections,false_positive_rate,false_negatives,mean_detection_latency,p50_latency,p95_latency,p99_latency,crashes,recoveries,wall_time_ms"
             )?;
         }
         let fmt_lat = |v: Option<f64>| v.map_or("N/A".to_string(), |l| format!("{:.2}", l));
         writeln!(
             f,
-            "{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{}",
+            "{},{},{},{:.4},{},{:.4},{},{},{},{},{},{},{},{:.3}",
             scenario_name,
             total_ticks,
             self.message_count,
@@ -189,6 +190,7 @@ impl MetricsCollector {
             fmt_lat(self.detection_latency_percentile(99.0)),
             self.crashes.len(),
             self.recoveries.len(),
+            wall_time_ms, // written as float with 3 decimal places
         )?;
         Ok(())
     }
@@ -234,6 +236,7 @@ impl MetricsCollector {
         path: &Path,
         total_ticks: u64,
         scenario_name: &str,
+        wall_time_ms: f64,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let null_or = |v: Option<f64>| v.map_or("null".to_string(), |l| format!("{:.4}", l));
         let mut f = std::fs::File::create(path)?;
@@ -274,7 +277,8 @@ impl MetricsCollector {
             null_or(self.detection_latency_percentile(99.0))
         )?;
         writeln!(f, "  \"crashes\": {},", self.crashes.len())?;
-        writeln!(f, "  \"recoveries\": {}", self.recoveries.len())?;
+        writeln!(f, "  \"recoveries\": {},", self.recoveries.len())?;
+        writeln!(f, "  \"wall_time_ms\": {:.3}", wall_time_ms)?;
         writeln!(f, "}}")?;
         Ok(())
     }

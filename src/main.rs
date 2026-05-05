@@ -1,5 +1,6 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use faultsim::aggregate::{export_runs_csv, export_sweep_csv, AggregatedMetrics, RunSnapshot};
 use faultsim::config::ScenarioConfig;
@@ -160,15 +161,19 @@ fn export_results(
     scenario_name: &str,
     max_ticks: u64,
     format: &str,
+    wall_time_ms: f64,
 ) {
     match format {
         "json" => {
             if let Err(e) = metrics.export_detections_json(&dir.join("detections.json")) {
                 eprintln!("Error writing detections JSON: {}", e);
             }
-            if let Err(e) =
-                metrics.export_summary_json(&dir.join("summary.json"), max_ticks, scenario_name)
-            {
+            if let Err(e) = metrics.export_summary_json(
+                &dir.join("summary.json"),
+                max_ticks,
+                scenario_name,
+                wall_time_ms,
+            ) {
                 eprintln!("Error writing summary JSON: {}", e);
             }
         }
@@ -177,9 +182,12 @@ fn export_results(
             if let Err(e) = metrics.export_detections_csv(&dir.join("detections.csv")) {
                 eprintln!("Error writing detections CSV: {}", e);
             }
-            if let Err(e) =
-                metrics.export_summary_csv(&dir.join("summary.csv"), max_ticks, scenario_name)
-            {
+            if let Err(e) = metrics.export_summary_csv(
+                &dir.join("summary.csv"),
+                max_ticks,
+                scenario_name,
+                wall_time_ms,
+            ) {
                 eprintln!("Error writing summary CSV: {}", e);
             }
         }
@@ -210,6 +218,7 @@ fn run_single(args: RunArgs) {
     engine.run();
 
     faultsim::scenario::print_summary(&engine.metrics, config.simulation.max_ticks);
+    println!("  Wall-clock time:  {:.2}ms", engine.run_time_ms);
 
     let output_dir = args.output.or_else(|| {
         config
@@ -237,6 +246,7 @@ fn run_single(args: RunArgs) {
             scenario_name,
             config.simulation.max_ticks,
             format,
+            engine.run_time_ms,
         );
     }
 }
@@ -271,6 +281,8 @@ fn run_all(args: RunAllArgs) {
 
     println!("Running {} scenarios...\n", toml_paths.len());
 
+    let batch_start = Instant::now();
+
     for path in &toml_paths {
         let scenario_name = path
             .file_stem()
@@ -302,6 +314,7 @@ fn run_all(args: RunAllArgs) {
             &summary_path,
             config.simulation.max_ticks,
             scenario_name,
+            engine.run_time_ms,
         ) {
             eprintln!(
                 "  [WARN] {}: failed to write summary row: {}",
@@ -310,7 +323,7 @@ fn run_all(args: RunAllArgs) {
         }
 
         println!(
-            "  {:32}  FP={:.4}  FN={:2}  mean_lat={}",
+            "  {:32}  FP={:.4}  FN={:2}  mean_lat={}  time={:.2}ms",
             scenario_name,
             engine.metrics.false_positive_rate(),
             engine.metrics.false_negative_count(),
@@ -318,10 +331,17 @@ fn run_all(args: RunAllArgs) {
                 .metrics
                 .mean_detection_latency()
                 .map_or("N/A".to_string(), |l| format!("{:.1}", l)),
+            engine.run_time_ms,
         );
     }
 
-    println!("\nDone. Summary written to {}", summary_path.display());
+    let batch_ms = batch_start.elapsed().as_millis();
+    println!(
+        "\nDone. {} scenarios in {}ms. Summary written to {}",
+        toml_paths.len(),
+        batch_ms,
+        summary_path.display()
+    );
 }
 
 // ── `sweep-seeds` ─────────────────────────────────────────────────────────────
@@ -345,12 +365,17 @@ fn sweep_seeds(args: SweepSeedsArgs) {
     for seed in 1..=args.seeds {
         let mut engine = faultsim::scenario::build_engine(&config, Some(seed));
         engine.run();
-        snapshots.push(RunSnapshot::from_metrics(&engine.metrics, seed));
+        snapshots.push(RunSnapshot::from_metrics(
+            &engine.metrics,
+            seed,
+            engine.run_time_ms,
+        ));
         eprint!(
-            "  seed {:>4}  FP={:.4}  FN={}\r",
+            "  seed {:>4}  FP={:.4}  FN={}  time={:.2}ms\r",
             seed,
             snapshots.last().unwrap().false_positive_rate,
-            snapshots.last().unwrap().false_negative_count
+            snapshots.last().unwrap().false_negative_count,
+            engine.run_time_ms
         );
     }
     eprintln!(); // clear the \r line
@@ -429,7 +454,7 @@ fn sweep(args: SweepArgs) {
         let mut engine = faultsim::scenario::build_engine(&config, Some(seed));
         engine.run();
 
-        let snap = RunSnapshot::from_metrics(&engine.metrics, seed);
+        let snap = RunSnapshot::from_metrics(&engine.metrics, seed, engine.run_time_ms);
         let fmt_lat = |v: f64| {
             if v.is_nan() {
                 "N/A".to_string()

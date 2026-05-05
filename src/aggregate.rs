@@ -23,10 +23,11 @@ pub struct RunSnapshot {
     pub p95_latency: f64,
     pub p99_latency: f64,
     pub message_count: f64,
+    pub wall_time_ms: f64,
 }
 
 impl RunSnapshot {
-    pub fn from_metrics(metrics: &MetricsCollector, seed: u64) -> Self {
+    pub fn from_metrics(metrics: &MetricsCollector, seed: u64, wall_time_ms: f64) -> Self {
         Self {
             seed,
             false_positive_rate: metrics.false_positive_rate(),
@@ -42,6 +43,7 @@ impl RunSnapshot {
                 .detection_latency_percentile(99.0)
                 .unwrap_or(f64::NAN),
             message_count: metrics.message_count as f64,
+            wall_time_ms,
         }
     }
 }
@@ -121,6 +123,7 @@ pub struct AggregatedMetrics {
     pub p95_latency: Stat,
     pub p99_latency: Stat,
     pub message_count: Stat,
+    pub wall_time_ms: Stat,
 }
 
 impl AggregatedMetrics {
@@ -134,6 +137,7 @@ impl AggregatedMetrics {
             p95_latency: stat_field!(runs, p95_latency),
             p99_latency: stat_field!(runs, p99_latency),
             message_count: stat_field!(runs, message_count),
+            wall_time_ms: stat_field!(runs, wall_time_ms),
         }
     }
 
@@ -177,6 +181,11 @@ impl AggregatedMetrics {
             "Messages delivered",
             self.message_count.display()
         );
+        println!(
+            "{:<28}  {}",
+            "Wall-clock time (ms)",
+            self.wall_time_ms.display()
+        );
     }
 
     /// Write aggregated stats to a CSV file (metric per row).
@@ -212,6 +221,7 @@ impl AggregatedMetrics {
         writeln!(f, "{}", row("p95_latency", &self.p95_latency))?;
         writeln!(f, "{}", row("p99_latency", &self.p99_latency))?;
         writeln!(f, "{}", row("message_count", &self.message_count))?;
+        writeln!(f, "{}", row("wall_time_ms", &self.wall_time_ms))?;
         Ok(())
     }
 }
@@ -227,7 +237,7 @@ pub fn export_runs_csv(
     writeln!(
         f,
         "seed,false_positive_rate,false_negatives,mean_detection_latency,\
-         p50_latency,p95_latency,p99_latency,message_count"
+         p50_latency,p95_latency,p99_latency,message_count,wall_time_ms"
     )?;
     let fmt = |v: f64| {
         if v.is_nan() {
@@ -239,7 +249,7 @@ pub fn export_runs_csv(
     for r in runs {
         writeln!(
             f,
-            "{},{:.4},{},{},{},{},{},{}",
+            "{},{:.4},{},{},{},{},{},{},{:.3}",
             r.seed,
             r.false_positive_rate,
             r.false_negative_count,
@@ -248,6 +258,7 @@ pub fn export_runs_csv(
             fmt(r.p95_latency),
             fmt(r.p99_latency),
             r.message_count,
+            r.wall_time_ms,
         )?;
     }
     Ok(())
@@ -264,7 +275,7 @@ pub fn export_sweep_csv(
     writeln!(
         f,
         "{},false_positive_rate,false_negatives,mean_detection_latency,\
-         p50_latency,p95_latency,p99_latency,message_count",
+         p50_latency,p95_latency,p99_latency,message_count,wall_time_ms",
         param_label
     )?;
     let fmt = |v: f64| {
@@ -277,7 +288,7 @@ pub fn export_sweep_csv(
     for (param_val, r) in rows {
         writeln!(
             f,
-            "{:.6},{:.4},{},{},{},{},{},{}",
+            "{:.6},{:.4},{},{},{},{},{},{},{:.3}",
             param_val,
             r.false_positive_rate,
             r.false_negative_count,
@@ -286,6 +297,7 @@ pub fn export_sweep_csv(
             fmt(r.p95_latency),
             fmt(r.p99_latency),
             r.message_count,
+            r.wall_time_ms,
         )?;
     }
     Ok(())

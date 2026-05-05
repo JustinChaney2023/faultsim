@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::time::Instant;
 
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
@@ -26,6 +27,8 @@ pub struct Engine {
     active_suspicions: HashSet<(NodeId, NodeId)>,
     /// When true, record a φ sample from every accrual detector on each DetectorTick.
     pub phi_log_enabled: bool,
+    /// Wall-clock milliseconds elapsed during the last call to `run()` (float, sub-ms precision).
+    pub run_time_ms: f64,
 }
 
 impl Engine {
@@ -42,6 +45,7 @@ impl Engine {
             rng: None,
             active_suspicions: HashSet::new(),
             phi_log_enabled: false,
+            run_time_ms: 0.0,
         }
     }
 
@@ -64,19 +68,21 @@ impl Engine {
             rng: Some(rng),
             active_suspicions: HashSet::new(),
             phi_log_enabled: false,
+            run_time_ms: 0.0,
         }
     }
 
     /// Run the simulation until the event queue is empty or max_tick is reached.
     pub fn run(&mut self) {
+        let t0 = Instant::now();
         while let Some(event) = self.queue.pop() {
             if event.tick > self.max_tick {
                 break;
             }
-
             self.clock.advance_to(event.tick);
             self.dispatch(event);
         }
+        self.run_time_ms = t0.elapsed().as_secs_f64() * 1000.0;
     }
 
     fn dispatch(&mut self, event: Event) {
