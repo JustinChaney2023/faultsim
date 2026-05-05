@@ -17,14 +17,11 @@
 | **Gossip-assisted suspicion** | Combines local heartbeat monitoring with suspicion disseminated via gossip |
 | **Phi accrual** | Suspicion level derived from a distribution over recent inter-arrival samples |
 | **Adaptive accrual** | Accrual-style detector with parameters tuned online |
-| **Custom** | User-defined detector implemented in `src/detector/custom.rs` |
 
 ## Key Metrics
 
 - **False positive rate** - fraction of healthy nodes incorrectly declared failed
-- **False negatives** - crashed nodes that were never detected
-- **Detection latency** - time from actual failure to detection, including p50/p95/p99 summaries
-- **Message overhead** - total messages delivered during the run
+- **Detection latency** - time from actual failure to detection, including mean and p95 summaries
 - **Wall-clock runtime** - simulator execution time in milliseconds (`wall_time_ms` in CSV/JSON outputs)
 
 ## Project Structure
@@ -107,5 +104,3 @@ Every run is deterministic for a given `(config, seed)` pair. A single `StdRng` 
 ## Development
 
 Use short-lived branches for focused changes and merge them back into `main` once tests are passing. Keep noteworthy design or workflow decisions documented in [docs/logs/](docs/logs/).
-
-For more context, see [docs/design.md](docs/design.md), [docs/experiment-plan.md](docs/experiment-plan.md), and [docs/custom-detector.md](docs/custom-detector.md).
